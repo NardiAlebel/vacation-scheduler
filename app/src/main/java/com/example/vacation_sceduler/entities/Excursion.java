@@ -13,7 +13,7 @@ import androidx.room.PrimaryKey;
                 childColumns = "vacationId",
                 onDelete = ForeignKey.NO_ACTION
         ))
-public class Excursion {
+public class Excursion implements ScheduleItem {
 
     @PrimaryKey(autoGenerate = true)
     private int id;
@@ -57,5 +57,15 @@ public class Excursion {
 
     public void setVacationId(int vacationId) {
         this.vacationId = vacationId;
+    }
+
+    @Override
+    public String getDisplayTitle() {
+        return title;
+    }
+
+    @Override
+    public String getDisplayDate() {
+        return date;
     }
 }

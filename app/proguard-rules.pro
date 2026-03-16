@@ -19,3 +19,7 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+-keep class com.example.vacation_sceduler.entities.** { *; }
+-keep class com.example.vacation_sceduler.dao.** { *; }
+-keep class com.example.vacation_sceduler.database.** { *; }

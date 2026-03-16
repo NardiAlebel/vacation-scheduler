@@ -40,6 +40,11 @@
             android:exported="false"
             android:parentActivityName=".VacationDetailActivity" />
 
+        <activity
+            android:name=".ReportActivity"
+            android:exported="false"
+            android:parentActivityName=".VacationListActivity" />
+
         <receiver
             android:name=".receivers.VacationAlertReceiver"
             android:exported="false" />

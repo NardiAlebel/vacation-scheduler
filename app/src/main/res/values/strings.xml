@@ -36,4 +36,17 @@
     <string name="excursion_alert_set">Alert set for excursion date</string>
     <string name="please_enter_excursion_date">Please enter excursion date first</string>
     <string name="excursion_date_not_in_vacation">Excursion date must be during the vacation period</string>
+    <string name="search_hint">Search vacations by name or hotel…</string>
+    <string name="report">Report</string>
+    <string name="report_title">Vacation Report</string>
+    <string name="report_generated">Generated: %1$s</string>
+    <string name="col_vacation_name">Vacation Name</string>
+    <string name="col_hotel">Hotel</string>
+    <string name="col_start_date">Start Date</string>
+    <string name="col_end_date">End Date</string>
+    <string name="col_excursions">Excursions</string>
+    <string name="confirm_delete_title">Confirm Delete</string>
+    <string name="confirm_delete_vacation">Are you sure you want to delete this vacation?</string>
+    <string name="confirm_delete_excursion">Are you sure you want to delete this excursion?</string>
+    <string name="name_too_long">Name must be 100 characters or fewer</string>
 </resources>

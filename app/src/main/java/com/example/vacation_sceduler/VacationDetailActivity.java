@@ -1,17 +1,12 @@
 package com.example.vacation_sceduler;
 
-import android.app.AlarmManager;
-import android.app.DatePickerDialog;
-import android.app.PendingIntent;
-import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -22,17 +17,14 @@ import com.example.vacation_sceduler.adapters.ExcursionAdapter;
 import com.example.vacation_sceduler.database.VacationRepository;
 import com.example.vacation_sceduler.entities.Excursion;
 import com.example.vacation_sceduler.entities.Vacation;
-import com.example.vacation_sceduler.receivers.VacationAlertReceiver;
+import com.example.vacation_sceduler.ui.BaseDetailActivity;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
-public class VacationDetailActivity extends AppCompatActivity {
+public class VacationDetailActivity extends BaseDetailActivity {
 
     private TextInputEditText editName;
     private TextInputEditText editHotel;
@@ -44,9 +36,6 @@ public class VacationDetailActivity extends AppCompatActivity {
 
     private int vacationId = -1;
     private boolean isNewVacation = true;
-
-    private static final String DATE_FORMAT = "MM/dd/yyyy";
-    private SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT, Locale.US);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,7 +82,7 @@ public class VacationDetailActivity extends AppCompatActivity {
         editEndDate.setOnClickListener(v -> showDatePicker(editEndDate));
 
         saveButton.setOnClickListener(v -> saveVacation());
-        deleteButton.setOnClickListener(v -> deleteVacation());
+        deleteButton.setOnClickListener(v -> confirmDeleteVacation());
         setAlertButton.setOnClickListener(v -> setVacationAlerts());
         shareButton.setOnClickListener(v -> shareVacation());
 
@@ -122,39 +111,11 @@ public class VacationDetailActivity extends AppCompatActivity {
         }
     }
 
-    private void showDatePicker(TextInputEditText editText) {
-        Calendar calendar = Calendar.getInstance();
-        int year = calendar.get(Calendar.YEAR);
-        int month = calendar.get(Calendar.MONTH);
-        int day = calendar.get(Calendar.DAY_OF_MONTH);
-
-        DatePickerDialog datePickerDialog = new DatePickerDialog(this,
-                (view, selectedYear, selectedMonth, selectedDay) -> {
-                    String date = String.format(Locale.US, "%02d/%02d/%04d",
-                            selectedMonth + 1, selectedDay, selectedYear);
-                    editText.setText(date);
-                }, year, month, day);
-        datePickerDialog.show();
-    }
-
-    private boolean isValidDateFormat(String dateStr) {
-        if (dateStr == null || dateStr.isEmpty()) {
-            return false;
-        }
-        try {
-            dateFormat.setLenient(false);
-            dateFormat.parse(dateStr);
-            return true;
-        } catch (ParseException e) {
-            return false;
-        }
-    }
-
     private boolean isEndDateAfterStartDate(String startDateStr, String endDateStr) {
         try {
             Date startDate = dateFormat.parse(startDateStr);
             Date endDate = dateFormat.parse(endDateStr);
-            return endDate.after(startDate) || endDate.equals(startDate);
+            return endDate != null && startDate != null && (!endDate.before(startDate));
         } catch (ParseException e) {
             return false;
         }
@@ -168,6 +129,11 @@ public class VacationDetailActivity extends AppCompatActivity {
 
         if (name.isEmpty()) {
             Toast.makeText(this, "Please enter a vacation name", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (name.length() > 100) {
+            Toast.makeText(this, R.string.name_too_long, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -199,12 +165,21 @@ public class VacationDetailActivity extends AppCompatActivity {
         finish();
     }
 
-    private void deleteVacation() {
+    private void confirmDeleteVacation() {
         if (isNewVacation) {
             finish();
             return;
         }
 
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.confirm_delete_title)
+                .setMessage(R.string.confirm_delete_vacation)
+                .setPositiveButton(R.string.delete, (dialog, which) -> deleteVacation())
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void deleteVacation() {
         int excursionCount = repository.getExcursionCountForVacation(vacationId);
         if (excursionCount > 0) {
             Toast.makeText(this, R.string.cannot_delete_vacation, Toast.LENGTH_LONG).show();
@@ -243,38 +218,12 @@ public class VacationDetailActivity extends AppCompatActivity {
             Date start = dateFormat.parse(startDate);
             Date end = dateFormat.parse(endDate);
 
-            setAlert(start.getTime(), name, getString(R.string.vacation_starting) + ": " + name, vacationId * 2);
-            setAlert(end.getTime(), name, getString(R.string.vacation_ending) + ": " + name, vacationId * 2 + 1);
+            if (start != null) setAlert(start.getTime(), name, getString(R.string.vacation_starting) + ": " + name, vacationId * 2);
+            if (end != null) setAlert(end.getTime(), name, getString(R.string.vacation_ending) + ": " + name, vacationId * 2 + 1);
 
             Toast.makeText(this, R.string.alert_set, Toast.LENGTH_SHORT).show();
         } catch (ParseException e) {
             Toast.makeText(this, R.string.invalid_date_format, Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void setAlert(long triggerTime, String title, String message, int requestCode) {
-        Intent intent = new Intent(this, VacationAlertReceiver.class);
-        intent.putExtra("title", title);
-        intent.putExtra("message", message);
-
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                this,
-                requestCode,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        if (alarmManager != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (alarmManager.canScheduleExactAlarms()) {
-                    alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
-                } else {
-                    alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
-                }
-            } else {
-                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
-            }
         }
     }
 

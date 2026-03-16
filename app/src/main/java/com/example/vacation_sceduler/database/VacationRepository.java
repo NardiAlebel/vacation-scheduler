@@ -39,6 +39,18 @@ public class VacationRepository {
         return allVacations;
     }
 
+    public List<Vacation> searchVacations(String query) {
+        databaseExecutor.execute(() -> {
+            allVacations = vacationDao.searchVacations(query);
+        });
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return allVacations;
+    }
+
     public void insert(Vacation vacation) {
         databaseExecutor.execute(() -> {
             vacationDao.insert(vacation);

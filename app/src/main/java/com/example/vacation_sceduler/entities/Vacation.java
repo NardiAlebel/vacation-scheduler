@@ -4,7 +4,7 @@ import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "vacations")
-public class Vacation {
+public class Vacation implements ScheduleItem {
 
     @PrimaryKey(autoGenerate = true)
     private int id;
@@ -58,5 +58,15 @@ public class Vacation {
 
     public void setEndDate(String endDate) {
         this.endDate = endDate;
+    }
+
+    @Override
+    public String getDisplayTitle() {
+        return name;
+    }
+
+    @Override
+    public String getDisplayDate() {
+        return startDate + " - " + endDate;
     }
 }

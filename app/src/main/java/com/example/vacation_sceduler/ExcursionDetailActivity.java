@@ -1,34 +1,25 @@
 package com.example.vacation_sceduler;
 
-import android.app.AlarmManager;
-import android.app.DatePickerDialog;
-import android.app.PendingIntent;
-import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.vacation_sceduler.database.VacationRepository;
 import com.example.vacation_sceduler.entities.Excursion;
-import com.example.vacation_sceduler.receivers.VacationAlertReceiver;
+import com.example.vacation_sceduler.ui.BaseDetailActivity;
 import com.google.android.material.textfield.TextInputEditText;
 
+import java.text.ParseException;
 import java.util.Date;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Locale;
-
-public class ExcursionDetailActivity extends AppCompatActivity {
+public class ExcursionDetailActivity extends BaseDetailActivity {
 
     private TextInputEditText editTitle;
     private TextInputEditText editDate;
@@ -40,9 +31,6 @@ public class ExcursionDetailActivity extends AppCompatActivity {
     private boolean isNewExcursion = true;
     private String vacationStartDate;
     private String vacationEndDate;
-
-    private static final String DATE_FORMAT = "MM/dd/yyyy";
-    private SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT, Locale.US);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,51 +66,24 @@ public class ExcursionDetailActivity extends AppCompatActivity {
             editDate.setText(intent.getStringExtra("excursionDate"));
         }
 
-        editDate.setOnClickListener(v -> showDatePicker());
+        editDate.setOnClickListener(v -> showDatePicker(editDate));
 
         saveButton.setOnClickListener(v -> saveExcursion());
-        deleteButton.setOnClickListener(v -> deleteExcursion());
+        deleteButton.setOnClickListener(v -> confirmDeleteExcursion());
         setAlertButton.setOnClickListener(v -> setExcursionAlert());
-    }
-
-    private void showDatePicker() {
-        Calendar calendar = Calendar.getInstance();
-        int year = calendar.get(Calendar.YEAR);
-        int month = calendar.get(Calendar.MONTH);
-        int day = calendar.get(Calendar.DAY_OF_MONTH);
-
-        DatePickerDialog datePickerDialog = new DatePickerDialog(this,
-                (view, selectedYear, selectedMonth, selectedDay) -> {
-                    String date = String.format(Locale.US, "%02d/%02d/%04d",
-                            selectedMonth + 1, selectedDay, selectedYear);
-                    editDate.setText(date);
-                }, year, month, day);
-        datePickerDialog.show();
-    }
-
-    private boolean isValidDateFormat(String dateStr) {
-        if (dateStr == null || dateStr.isEmpty()) {
-            return false;
-        }
-        try {
-            dateFormat.setLenient(false);
-            dateFormat.parse(dateStr);
-            return true;
-        } catch (ParseException e) {
-            return false;
-        }
     }
 
     private boolean isDateWithinVacation(String excursionDateStr) {
         if (vacationStartDate == null || vacationStartDate.isEmpty() ||
-            vacationEndDate == null || vacationEndDate.isEmpty()) {
+                vacationEndDate == null || vacationEndDate.isEmpty()) {
             return true;
         }
         try {
             Date excursionDate = dateFormat.parse(excursionDateStr);
             Date startDate = dateFormat.parse(vacationStartDate);
             Date endDate = dateFormat.parse(vacationEndDate);
-            return !excursionDate.before(startDate) && !excursionDate.after(endDate);
+            return excursionDate != null && startDate != null && endDate != null
+                    && !excursionDate.before(startDate) && !excursionDate.after(endDate);
         } catch (ParseException e) {
             return true;
         }
@@ -134,6 +95,11 @@ public class ExcursionDetailActivity extends AppCompatActivity {
 
         if (title.isEmpty()) {
             Toast.makeText(this, "Please enter an excursion title", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (title.length() > 100) {
+            Toast.makeText(this, R.string.name_too_long, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -160,12 +126,21 @@ public class ExcursionDetailActivity extends AppCompatActivity {
         finish();
     }
 
-    private void deleteExcursion() {
+    private void confirmDeleteExcursion() {
         if (isNewExcursion) {
             finish();
             return;
         }
 
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.confirm_delete_title)
+                .setMessage(R.string.confirm_delete_excursion)
+                .setPositiveButton(R.string.delete, (dialog, which) -> deleteExcursion())
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void deleteExcursion() {
         Excursion excursion = new Excursion(
                 editTitle.getText() != null ? editTitle.getText().toString() : "",
                 editDate.getText() != null ? editDate.getText().toString() : "",
@@ -194,36 +169,12 @@ public class ExcursionDetailActivity extends AppCompatActivity {
 
         try {
             Date excursionDate = dateFormat.parse(date);
-            setAlert(excursionDate.getTime(), title, "Excursion: " + title, excursionId + 10000);
-            Toast.makeText(this, R.string.excursion_alert_set, Toast.LENGTH_SHORT).show();
+            if (excursionDate != null) {
+                setAlert(excursionDate.getTime(), title, "Excursion: " + title, excursionId + 10000);
+                Toast.makeText(this, R.string.excursion_alert_set, Toast.LENGTH_SHORT).show();
+            }
         } catch (ParseException e) {
             Toast.makeText(this, R.string.invalid_date_format, Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void setAlert(long triggerTime, String title, String message, int requestCode) {
-        Intent intent = new Intent(this, VacationAlertReceiver.class);
-        intent.putExtra("title", title);
-        intent.putExtra("message", message);
-
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                this,
-                requestCode,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        if (alarmManager != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (alarmManager.canScheduleExactAlarms()) {
-                    alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
-                } else {
-                    alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
-                }
-            } else {
-                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
-            }
         }
     }
 }
