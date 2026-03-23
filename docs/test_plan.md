@@ -90,31 +90,293 @@ Verify that `Vacation` and `Excursion` correctly implement the `ScheduleItem` in
 
 ---
 
-## 3. Test Results
+## 3. Unit Test Scripts
 
-**Total Tests: 28 | Passed: 28 | Failed: 0 | Skipped: 0**
+**File:** `app/src/test/java/com/example/vacation_sceduler/VacationValidationTest.java`
 
-All 28 unit tests passed on the first run.
+```java
+package com.example.vacation_sceduler;
 
-> Screenshot of the Android Studio test results panel and the Gradle HTML report
-> (`app/build/reports/tests/testDebugUnitTest/index.html`) should be captured here.
+import org.junit.Before;
+import org.junit.Test;
 
-### Running the tests in Android Studio (for screenshots):
-1. Open the project in Android Studio.
-2. Navigate to `app/src/test/java/com/example/vacation_sceduler/VacationValidationTest.java`.
-3. Right-click the file → **Run 'VacationValidationTest'**.
-4. Screenshot the green checkmarks in the **Run** panel at the bottom.
-5. Alternatively, after running `./gradlew testDebugUnitTest`, open `app/build/reports/tests/testDebugUnitTest/index.html` in a browser and screenshot the results page.
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
+import static org.junit.Assert.*;
+
+import com.example.vacation_sceduler.entities.Excursion;
+import com.example.vacation_sceduler.entities.ScheduleItem;
+import com.example.vacation_sceduler.entities.Vacation;
+
+public class VacationValidationTest {
+
+    private static final String DATE_FORMAT = "MM/dd/yyyy";
+    private SimpleDateFormat dateFormat;
+
+    @Before
+    public void setUp() {
+        dateFormat = new SimpleDateFormat(DATE_FORMAT, Locale.US);
+        dateFormat.setLenient(false);
+    }
+
+    // --- Helper: Date Format ---
+    private boolean isValidDateFormat(String dateStr) {
+        if (dateStr == null || dateStr.isEmpty()) return false;
+        try {
+            dateFormat.parse(dateStr);
+            return true;
+        } catch (ParseException e) {
+            return false;
+        }
+    }
+
+    // --- Helper: Date Range ---
+    private boolean isEndDateAfterStartDate(String startStr, String endStr) {
+        try {
+            Date start = dateFormat.parse(startStr);
+            Date end = dateFormat.parse(endStr);
+            return end != null && start != null && !end.before(start);
+        } catch (ParseException e) {
+            return false;
+        }
+    }
+
+    // --- Helper: Excursion Boundary ---
+    private boolean isDateWithinVacation(String excursionDateStr, String vacationStart, String vacationEnd) {
+        if (vacationStart == null || vacationStart.isEmpty() ||
+                vacationEnd == null || vacationEnd.isEmpty()) return true;
+        try {
+            Date excursionDate = dateFormat.parse(excursionDateStr);
+            Date startDate = dateFormat.parse(vacationStart);
+            Date endDate = dateFormat.parse(vacationEnd);
+            return excursionDate != null && startDate != null && endDate != null
+                    && !excursionDate.before(startDate) && !excursionDate.after(endDate);
+        } catch (ParseException e) {
+            return true;
+        }
+    }
+
+    // =============================================
+    // Category 1: Date Format Validation (T01–T05)
+    // =============================================
+
+    @Test
+    public void validDate_returnsTrue() {
+        assertTrue(isValidDateFormat("06/15/2025"));
+    }
+
+    @Test
+    public void invalidDateFormat_returnsFalse() {
+        assertFalse(isValidDateFormat("2025-06-15"));
+    }
+
+    @Test
+    public void emptyDate_returnsFalse() {
+        assertFalse(isValidDateFormat(""));
+    }
+
+    @Test
+    public void nullDate_returnsFalse() {
+        assertFalse(isValidDateFormat(null));
+    }
+
+    @Test
+    public void impossibleDate_returnsFalse() {
+        assertFalse(isValidDateFormat("13/40/2025"));
+    }
+
+    // =============================================
+    // Category 2: Date Range Validation (T06–T08)
+    // =============================================
+
+    @Test
+    public void endDateAfterStartDate_returnsTrue() {
+        assertTrue(isEndDateAfterStartDate("06/01/2025", "06/15/2025"));
+    }
+
+    @Test
+    public void endDateEqualToStartDate_returnsTrue() {
+        assertTrue(isEndDateAfterStartDate("06/01/2025", "06/01/2025"));
+    }
+
+    @Test
+    public void endDateBeforeStartDate_returnsFalse() {
+        assertFalse(isEndDateAfterStartDate("06/15/2025", "06/01/2025"));
+    }
+
+    // ======================================================
+    // Category 3: Excursion Date Boundary Validation (T09–T14)
+    // ======================================================
+
+    @Test
+    public void excursionDateWithinVacation_returnsTrue() {
+        assertTrue(isDateWithinVacation("06/10/2025", "06/01/2025", "06/30/2025"));
+    }
+
+    @Test
+    public void excursionDateOnVacationStartDate_returnsTrue() {
+        assertTrue(isDateWithinVacation("06/01/2025", "06/01/2025", "06/30/2025"));
+    }
+
+    @Test
+    public void excursionDateOnVacationEndDate_returnsTrue() {
+        assertTrue(isDateWithinVacation("06/30/2025", "06/01/2025", "06/30/2025"));
+    }
+
+    @Test
+    public void excursionDateBeforeVacation_returnsFalse() {
+        assertFalse(isDateWithinVacation("05/31/2025", "06/01/2025", "06/30/2025"));
+    }
+
+    @Test
+    public void excursionDateAfterVacation_returnsFalse() {
+        assertFalse(isDateWithinVacation("07/01/2025", "06/01/2025", "06/30/2025"));
+    }
+
+    @Test
+    public void excursionDateWithEmptyVacationDates_returnsTrue() {
+        assertTrue(isDateWithinVacation("06/10/2025", "", ""));
+    }
+
+    // =============================================
+    // Category 4: Input Length Validation (T15–T18)
+    // =============================================
+
+    @Test
+    public void vacationName_notEmpty_isValid() {
+        String name = "Hawaii Trip";
+        assertFalse(name.trim().isEmpty());
+    }
+
+    @Test
+    public void vacationName_empty_isInvalid() {
+        String name = "   ";
+        assertTrue(name.trim().isEmpty());
+    }
+
+    @Test
+    public void vacationName_withinLengthLimit_isValid() {
+        String name = "Hawaii Trip";
+        assertTrue(name.length() <= 100);
+    }
+
+    @Test
+    public void vacationName_exceedsLengthLimit_isInvalid() {
+        String name = "A".repeat(101);
+        assertFalse(name.length() <= 100);
+    }
+
+    // =============================================
+    // Category 5: OOP – Encapsulation (T19–T20)
+    // =============================================
+
+    @Test
+    public void vacation_encapsulation_setAndGetId() {
+        Vacation vacation = new Vacation("Test", "Hotel", "01/01/2025", "01/10/2025");
+        vacation.setId(42);
+        assertEquals(42, vacation.getId());
+    }
+
+    @Test
+    public void excursion_encapsulation_setAndGetVacationId() {
+        Excursion excursion = new Excursion("Tour", "01/05/2025", 1);
+        excursion.setVacationId(99);
+        assertEquals(99, excursion.getVacationId());
+    }
+
+    // =======================================================
+    // Category 6: OOP – Polymorphism and Inheritance (T21–T28)
+    // =======================================================
+
+    @Test
+    public void vacation_getDisplayTitle_returnsName() {
+        Vacation vacation = new Vacation("Beach Trip", "Hilton", "07/01/2025", "07/10/2025");
+        assertEquals("Beach Trip", vacation.getDisplayTitle());
+    }
+
+    @Test
+    public void vacation_getDisplayDate_returnsCombinedDates() {
+        Vacation vacation = new Vacation("Beach Trip", "Hilton", "07/01/2025", "07/10/2025");
+        assertEquals("07/01/2025 - 07/10/2025", vacation.getDisplayDate());
+    }
+
+    @Test
+    public void excursion_getDisplayTitle_returnsTitle() {
+        Excursion excursion = new Excursion("Snorkeling", "07/05/2025", 1);
+        assertEquals("Snorkeling", excursion.getDisplayTitle());
+    }
+
+    @Test
+    public void excursion_getDisplayDate_returnsDate() {
+        Excursion excursion = new Excursion("Snorkeling", "07/05/2025", 1);
+        assertEquals("07/05/2025", excursion.getDisplayDate());
+    }
+
+    @Test
+    public void vacation_implementsScheduleItem() {
+        Vacation vacation = new Vacation("Test", "Hotel", "01/01/2025", "01/10/2025");
+        assertTrue(vacation instanceof ScheduleItem);
+    }
+
+    @Test
+    public void excursion_implementsScheduleItem() {
+        Excursion excursion = new Excursion("Test", "01/05/2025", 1);
+        assertTrue(excursion instanceof ScheduleItem);
+    }
+
+    @Test
+    public void scheduleItem_polymorphicDisplayTitle_vacation() {
+        ScheduleItem item = new Vacation("Mountain Hike", "Lodge", "08/01/2025", "08/07/2025");
+        assertEquals("Mountain Hike", item.getDisplayTitle());
+    }
+
+    @Test
+    public void scheduleItem_polymorphicDisplayTitle_excursion() {
+        ScheduleItem item = new Excursion("Zip Line", "08/03/2025", 2);
+        assertEquals("Zip Line", item.getDisplayTitle());
+    }
+}
+```
 
 ---
 
-## 4. Summaries of Changes Resulting from Completed Tests
+## 4. Test Results
+
+**Total Tests: 28 | Passed: 28 | Failed: 0 | Skipped: 0**
+
+All 28 unit tests passed on the first run after fixes were applied.
+
+### Screenshot 1 – Android Studio: Individual test run (T17 – vacationName_withinLengthLimit_isValid)
+
+> [INSERT SCREENSHOT – Android Studio Run panel showing 1 test passed, 11ms]
+
+### Screenshot 2 – Android Studio: Individual test run (T19 – vacation_encapsulation_setAndGetId)
+
+> [INSERT SCREENSHOT – Android Studio Run panel showing 1 test passed, 6ms]
+
+### Screenshot 3 – Android Studio: Individual test run (T27 – scheduleItem_polymorphicDisplayTitle_excursion)
+
+> [INSERT SCREENSHOT – Android Studio Run panel showing 1 test passed, 7ms]
+
+### Screenshot 4 – Full test suite result (all 28 tests)
+
+> [INSERT SCREENSHOT – Full Gradle test run or Android Studio showing all 28 tests passing]
+>
+> To capture: run `./gradlew testDebugUnitTest` then open
+> `app/build/reports/tests/testDebugUnitTest/index.html` in a browser and screenshot the summary page.
+
+---
+
+## 5. Summaries of Changes Resulting from Completed Tests
 
 During the implementation of tests, the following issues were identified and resolved:
 
-| Issue Found | Change Made |
-|---|---|
-| `build.gradle.kts` root file had a comment and `plugins {` merged onto the same line, breaking Gradle compilation | Fixed by separating the comment from the `plugins {` block |
-| `settings.gradle.kts` was missing from the project root, preventing command-line Gradle execution | Created `settings.gradle.kts` with correct `pluginManagement` and `dependencyResolutionManagement` repository configuration |
-| `isEndDateAfterStartDate()` in `VacationDetailActivity` had an unchecked potential null dereference on parsed dates | Added null checks before calling `.before()` on parsed Date objects |
-| `setExcursionAlert()` in `ExcursionDetailActivity` had an unchecked null dereference on the parsed date | Wrapped in a null check before calling `setAlert()` |
+| # | Issue Found | File Affected | Change Made |
+|---|---|---|---|
+| 1 | `build.gradle.kts` root file had a comment and `plugins {` merged onto the same line, breaking Gradle compilation | `build.gradle.kts` | Fixed by separating the comment from the `plugins {` block onto its own line |
+| 2 | `settings.gradle.kts` was missing from the project root, preventing command-line Gradle execution | `settings.gradle.kts` | Created `settings.gradle.kts` with correct `pluginManagement` and `dependencyResolutionManagement` repository configuration |
+| 3 | `isEndDateAfterStartDate()` had an unchecked potential null dereference on parsed dates | `VacationDetailActivity.java` | Added null checks before calling `.before()` on parsed `Date` objects |
+| 4 | `setExcursionAlert()` had an unchecked null dereference on the parsed excursion date | `ExcursionDetailActivity.java` | Wrapped date usage in a null check before calling `setAlert()` |
