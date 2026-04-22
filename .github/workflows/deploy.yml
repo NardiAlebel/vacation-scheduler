@@ -28,15 +28,6 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
 
-      # ── Set up Android SDK with sdkmanager in PATH ───────────────────────────
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK platform 36
-        run: |
-          sdkmanager --update
-          sdkmanager "platforms;android-36" "build-tools;34.0.0"
-
       # ── Build the debug APK ──────────────────────────────────────────────────
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
