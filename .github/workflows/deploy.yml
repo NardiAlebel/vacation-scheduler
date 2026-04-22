@@ -1,0 +1,53 @@
+# Vacation Scheduler - GitHub Actions CI/CD Pipeline
+# Builds the Android APK using a Docker container and deploys to GitHub Pages
+
+name: Build and Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Build APK inside Docker container ──────────────────────────────────
+      - name: Build Docker image (Android SDK environment)
+        run: docker build -t vacation-scheduler-build .
+
+      - name: Run container to produce APK
+        run: |
+          mkdir -p output
+          docker run --rm \
+            -v "${{ github.workspace }}/output:/app/app/build/outputs/apk/debug" \
+            vacation-scheduler-build \
+            ./gradlew assembleDebug --no-daemon
+
+      - name: Verify APK was produced
+        run: ls -lh output/
+
+      # ── Assemble GitHub Pages deployment directory ─────────────────────────
+      - name: Prepare GitHub Pages directory
+        run: |
+          mkdir -p gh-pages
+          cp output/app-debug.apk gh-pages/VacationScheduler.apk
+          cp deploy/index.html gh-pages/index.html
+
+      # ── Deploy to GitHub Pages ─────────────────────────────────────────────
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./gh-pages
+          publish_branch: gh-pages
+          commit_message: "Deploy Vacation Scheduler APK - ${{ github.sha }}"

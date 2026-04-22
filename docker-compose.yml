@@ -1,0 +1,20 @@
+# Vacation Scheduler - Docker Compose for local APK builds
+# Usage: docker-compose up --build
+# The built APK will be placed in ./output/
+
+version: "3.8"
+
+services:
+  android-build:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vacation-scheduler-build
+    volumes:
+      # Mount output directory so the APK is accessible on the host
+      - ./output:/app/app/build/outputs/apk/debug
+    command: >
+      bash -c "
+        ./gradlew assembleDebug --no-daemon &&
+        echo 'Build complete. APK is available in ./output/'
+      "

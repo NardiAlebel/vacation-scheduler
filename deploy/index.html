@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vacation Scheduler – Android App</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      max-width: 520px;
+      width: 100%;
+      padding: 48px 40px;
+      text-align: center;
+    }
+
+    .icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #1a73e8;
+      margin-bottom: 8px;
+    }
+
+    .tagline {
+      color: #555;
+      font-size: 1rem;
+      margin-bottom: 32px;
+    }
+
+    .features {
+      text-align: left;
+      list-style: none;
+      margin-bottom: 36px;
+    }
+
+    .features li {
+      padding: 8px 0;
+      color: #333;
+      font-size: 0.95rem;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .features li:last-child { border-bottom: none; }
+
+    .features li::before {
+      content: "✓ ";
+      color: #1a73e8;
+      font-weight: bold;
+    }
+
+    .download-btn {
+      display: inline-block;
+      background: #1a73e8;
+      color: #fff;
+      text-decoration: none;
+      padding: 16px 40px;
+      border-radius: 50px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      transition: background 0.2s;
+      margin-bottom: 16px;
+    }
+
+    .download-btn:hover { background: #1558b0; }
+
+    .note {
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 8px;
+    }
+
+    .info {
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 1px solid #eee;
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">&#9992;&#65039;</div>
+    <h1>Vacation Scheduler</h1>
+    <p class="tagline">Plan and manage your vacations and excursions — all in one place.</p>
+
+    <ul class="features">
+      <li>Create and organize vacation itineraries</li>
+      <li>Add excursions and activities to each trip</li>
+      <li>Set date-based alerts and push notifications</li>
+      <li>Search vacation history and generate reports</li>
+      <li>Share vacation details with friends and family</li>
+    </ul>
+
+    <a class="download-btn" href="VacationScheduler.apk" download>
+      &#11015;&#65039; Download APK
+    </a>
+
+    <p class="note">
+      Requires Android 8.0 (API 26) or higher.<br />
+      Enable "Install from unknown sources" in your device settings before installing.
+    </p>
+
+    <div class="info">
+      <p>WGU D424 Software Engineering Capstone &mdash; Version 1.0</p>
+      <p>Deployed via GitHub Pages &amp; GitHub Actions</p>
+    </div>
+  </div>
+</body>
+</html>
